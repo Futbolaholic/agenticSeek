@@ -75,3 +75,14 @@ class executorResult:
         pretty_print('▂'*64, color="status")
         pretty_print(self.feedback, color="success" if self.success else "failure")
         pretty_print('▂'*64, color="status")
+class JournalEntry(BaseModel):
+    date: str
+    energy: int
+    sleep_quality: int
+    supplements: list[str] = []
+    mood: str = ""
+    symptoms: str = ""
+
+class InteractionRequest(BaseModel):
+    items: list[str]
+
