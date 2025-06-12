@@ -20,7 +20,14 @@ from sources.agents import CasualAgent, CoderAgent, FileAgent, PlannerAgent, Bro
 from sources.browser import Browser, create_driver
 from sources.utility import pretty_print
 from sources.logger import Logger
-from sources.schemas import QueryRequest, QueryResponse
+from sources.schemas import (
+    QueryRequest,
+    QueryResponse,
+    JournalEntry,
+    InteractionRequest,
+)
+from sources.journal import Journal
+from sources.interaction_checker import InteractionChecker
 
 
 from celery import Celery
@@ -43,6 +50,9 @@ api.add_middleware(
 if not os.path.exists(".screenshots"):
     os.makedirs(".screenshots")
 api.mount("/screenshots", StaticFiles(directory=".screenshots"), name="screenshots")
+
+journal = Journal()
+interaction_checker = InteractionChecker()
 
 def initialize_system():
     stealth_mode = config.getboolean('BROWSER', 'stealth_mode')
@@ -133,6 +143,23 @@ async def stop():
     logger.info("Stop endpoint called")
     interaction.current_agent.request_stop()
     return JSONResponse(status_code=200, content={"status": "stopped"})
+
+
+@api.post("/journal/add")
+async def add_journal_entry(entry: JournalEntry):
+    journal.add_entry(entry.dict())
+    return {"status": "added"}
+
+
+@api.get("/journal")
+async def get_journal():
+    return {"entries": journal.all_entries()}
+
+
+@api.post("/interactions/check")
+async def interactions_check(req: InteractionRequest):
+    data = await interaction_checker.check(req.items)
+    return {"interactions": data}
 
 @api.get("/latest_answer")
 async def get_latest_answer():
